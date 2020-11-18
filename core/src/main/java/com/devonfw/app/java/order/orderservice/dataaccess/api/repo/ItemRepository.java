@@ -2,7 +2,6 @@ package com.devonfw.app.java.order.orderservice.dataaccess.api.repo;
 
 import static com.querydsl.core.alias.Alias.$;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -13,21 +12,21 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import com.devonfw.app.java.order.orderservice.dataaccess.api.ItemEntity;
 import com.devonfw.app.java.order.orderservice.logic.api.to.ItemSearchCriteriaTo;
+import com.devonfw.module.basic.common.api.query.LikePatternSyntax;
+import com.devonfw.module.basic.common.api.query.StringSearchConfigTo;
 import com.devonfw.module.jpa.dataaccess.api.QueryUtil;
 import com.devonfw.module.jpa.dataaccess.api.data.DefaultRepository;
 import com.querydsl.jpa.impl.JPAQuery;
 
 public interface ItemRepository extends DefaultRepository<ItemEntity> {
 
-  public default ItemEntity updatePriceByItemsName(String Name, Double price) {
+  public default ItemEntity updatePriceByItemsName(String name, Double price) {
 
     ItemEntity updatedItem = null;
-    List<ItemEntity> itemsToUpdate = (List<ItemEntity>) findItemsByName(Name);
+    List<ItemEntity> itemsToUpdate = findItemsByName(name).getContent();
 
     if (CollectionUtils.isNotEmpty(itemsToUpdate)) {
       ItemEntity itemToUpdate = itemsToUpdate.get(0);
@@ -38,8 +37,17 @@ public interface ItemRepository extends DefaultRepository<ItemEntity> {
     return updatedItem;
   }
 
-  @Query("SELECT i FROM Item i WHERE i.name = :name")
-  public Collection<ItemEntity> findItemsByName(@Param("name") String name);
+  public default Page<ItemEntity> findItemsByName(String name) {
+
+    ItemSearchCriteriaTo criteria = new ItemSearchCriteriaTo();
+    criteria.setName(name);
+    StringSearchConfigTo nameOption = new StringSearchConfigTo();
+    nameOption.setIgnoreCase(true);
+    nameOption.setLikeSyntax(LikePatternSyntax.GLOB);
+    criteria.setNameOption(nameOption);
+
+    return findByCriteria(criteria);
+  }
 
   default Page<ItemEntity> findByCriteria(ItemSearchCriteriaTo criteria) {
 
